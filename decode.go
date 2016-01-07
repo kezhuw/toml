@@ -91,20 +91,6 @@ func indirectValue(v reflect.Value) (encoding.TextUnmarshaler, reflect.Value) {
 	return u, v
 }
 
-func checkValid(v reflect.Value) error {
-	switch v.Kind() {
-	case reflect.Invalid:
-		return &InvalidUnmarshalError{nil}
-	case reflect.Ptr:
-		if v.IsNil() {
-			return &InvalidUnmarshalError{v.Type()}
-		}
-		return nil
-	default:
-		return &InvalidUnmarshalError{v.Type()}
-	}
-}
-
 func findField(t *types.Table, field *reflect.StructField, tagname string) (string, types.Value) {
 	if tagname != "" {
 		return tagname, t.Elems[tagname]
@@ -494,8 +480,8 @@ func Unmarshal(data []byte, v interface{}) (err error) {
 	}
 
 	rv := reflect.ValueOf(v)
-	if err := checkValid(rv); err != nil {
-		return err
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return &InvalidUnmarshalError{reflect.TypeOf(v)}
 	}
 
 	_, rv = indirectValue(rv)
