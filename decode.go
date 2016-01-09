@@ -287,52 +287,44 @@ func unmarshalStructNested(t *types.Table, v reflect.Value, matchs map[string]st
 	vType := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		field := vType.Field(i)
-		// Unexported embedded struct fields may export internal
-		// export fields to its parent.
-		//
-		// There is a bug which cause unexported embedded struct fields
-		// settable in Go 1.5 and prior. See https://github.com/golang/go/issues/12367.
-		// Here we use ast.IsExported to circumvent it.
-		isExported := ast.IsExported(field.Name)
-		if !isExported && !field.Anonymous {
-			continue
-		}
-		var (
-			name    string
-			value   types.Value
-			options tagOptions
-		)
-		name, options = parseTag(field.Tag.Get("toml"))
+		name, options := parseTag(field.Tag.Get("toml"))
 		if name == "-" {
 			continue
 		}
-		if isExported {
-			name, value = findField(t, &field, name)
-		}
-		if value == nil {
-			if isExported && options.Has("omitempty") {
-				v.Field(i).Set(reflect.Zero(field.Type))
-			} else if field.Anonymous {
-				fieldValue := v.Field(i)
-				switch field.Type.Kind() {
-				case reflect.Struct:
-					unmarshalStructNested(t, v.Field(i), matchs)
-				case reflect.Ptr:
-					if field.Type.Elem().Kind() != reflect.Struct {
-						break
-					}
-					if fieldValue.IsNil() {
-						fieldNew := reflect.New(field.Type.Elem())
-						n := len(matchs)
-						unmarshalStructNested(t, fieldNew.Elem(), matchs)
-						if n != len(matchs) {
-							fieldValue.Set(fieldNew)
-						}
-					} else {
-						unmarshalStructNested(t, fieldValue, matchs)
-					}
-				default:
+		// Don't look inside explicitly tagged anonymous struct fields.
+		if field.Anonymous && name == "" {
+			fieldValue := v.Field(i)
+			switch field.Type.Kind() {
+			case reflect.Struct:
+				unmarshalStructNested(t, v.Field(i), matchs)
+				continue
+			case reflect.Ptr:
+				if field.Type.Elem().Kind() != reflect.Struct {
+					break
 				}
+				if fieldValue.IsNil() {
+					fieldNew := reflect.New(field.Type.Elem())
+					n := len(matchs)
+					unmarshalStructNested(t, fieldNew.Elem(), matchs)
+					if n != len(matchs) {
+						fieldValue.Set(fieldNew)
+					}
+				} else {
+					unmarshalStructNested(t, fieldValue, matchs)
+				}
+				continue
+			}
+		}
+		// There is a bug which cause unexported embedded struct fields
+		// settable in Go 1.5 and prior. See https://github.com/golang/go/issues/12367.
+		// Use ast.IsExported to circumvent it.
+		if !ast.IsExported(field.Name) {
+			continue
+		}
+		name, value := findField(t, &field, name)
+		if value == nil {
+			if options.Has("omitempty") {
+				v.Field(i).Set(reflect.Zero(field.Type))
 			}
 			continue
 		}

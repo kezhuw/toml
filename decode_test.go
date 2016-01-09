@@ -24,9 +24,11 @@ type Embedb struct {
 	*Embeda
 }
 
+type Integer16 uint16
+
 type Struct struct {
+	Integer16
 	STRING  string `toml:"sTrInG"`
-	Integer uint16
 	Pointer *string
 	Nested  Embeda
 }
@@ -81,8 +83,8 @@ var s = string("string")
 var unmarshalTests = []testData{
 	{`embed0 = 3_456`, new(Embed1), Embed1{embed0{E0: 3456}}, nil},
 	{`ea = """ea"""`, new(Embedb), Embedb{&Embeda{"ea"}}, nil},
-	{"sTrInG = 'ip4'\n integer = 1234", new(Struct), Struct{STRING: "ip4", Integer: 1234}, nil},
-	{"sTrInG = '''ip6'''\ninteger = 1234", new(Struct), Struct{STRING: "ip6", Integer: 1234}, nil},
+	{"sTrInG = 'ip4'\n integer16 = 1234", new(Struct), Struct{STRING: "ip4", Integer16: 1234}, nil},
+	{"sTrInG = '''ip6'''\ninteger16 = 1234", new(Struct), Struct{STRING: "ip6", Integer16: 1234}, nil},
 	{`pointer = "string"`, new(Struct), Struct{Pointer: &s}, nil},
 	{`"初次见面" = "你好，世界！"`, new(Unicode), Unicode{"你好，世界！"}, nil},
 	{`"初次\u89c1\U00009762" = "你好，\u4e16\U0000754c！"`, new(Unicode), Unicode{"你好，世界！"}, nil},
