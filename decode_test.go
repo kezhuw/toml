@@ -39,6 +39,11 @@ type Ignore struct {
 	Key string `toml:"-"`
 }
 
+type IgnoreEmbed struct {
+	embed0 `toml:"-"`
+	Embeda
+}
+
 type String struct {
 	Integer int64 `toml:",string"`
 }
@@ -84,6 +89,7 @@ var unmarshalTests = []testData{
 	{`t = 2016-01-07T15:30:30Z`, new(Datetime), Datetime{time.Date(2016, 1, 7, 15, 30, 30, 0, time.UTC)}, nil},
 	{`t = "2016-01-07T15:30:30Z"`, new(Datetime), Datetime{time.Date(2016, 1, 7, 15, 30, 30, 0, time.UTC)}, nil},
 	{`Key = "ignored"`, new(Ignore), Ignore{}, nil},
+	{`embed0 = 34_344_532`, new(IgnoreEmbed), IgnoreEmbed{}, nil},
 	{`integer = "123456"`, new(String), String{123456}, nil},
 	{``, &nonempty, Omitempty{}, nil},
 	{

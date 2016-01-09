@@ -302,11 +302,11 @@ func unmarshalStructNested(t *types.Table, v reflect.Value, matchs map[string]st
 			value   types.Value
 			options tagOptions
 		)
+		name, options = parseTag(field.Tag.Get("toml"))
+		if name == "-" {
+			continue
+		}
 		if isExported {
-			name, options = parseTag(field.Tag.Get("toml"))
-			if name == "-" {
-				continue
-			}
 			name, value = findField(t, &field, name)
 		}
 		if value == nil {
