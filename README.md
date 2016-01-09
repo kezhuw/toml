@@ -2,7 +2,7 @@
 
 Compatible with [TOML][] version [v0.4.0](https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.4.0.md).
 
-Run `go get github.com/BurntSushi/toml` to install.
+Run `go get github.com/kezhuw/toml` to install.
 
 Go [https://godoc.org/github.com/kezhuw/toml](https://godoc.org/github.com/kezhuw/toml) to see documentation.
 
