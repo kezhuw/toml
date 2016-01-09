@@ -2,9 +2,10 @@
 
 Compatible with [TOML][] version [v0.4.0](https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.4.0.md).
 
-Run `go get github.com/kezhuw/toml` to install.
+[![GoDoc](https://godoc.org/github.com/kezhuw/toml?status.svg)](http://godoc.org/github.com/kezhuw/toml)
+[![Build Status](https://travis-ci.org/kezhuw/toml.svg?branch=master)](https://travis-ci.org/kezhuw/toml)
 
-Go [https://godoc.org/github.com/kezhuw/toml](https://godoc.org/github.com/kezhuw/toml) to see documentation.
+Run `go get github.com/kezhuw/toml` to install.
 
 ## Examples
 Snippets copied from Go test files.
