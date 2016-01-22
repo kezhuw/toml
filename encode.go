@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"go/ast"
+	"io"
 	"reflect"
 	"strconv"
 	"strings"
@@ -715,4 +716,30 @@ func Marshal(v interface{}) (b []byte, err error) {
 	}
 	e.WriteByte('\n')
 	return e.Bytes(), nil
+}
+
+// Encoder writes TOML document to an output stream.
+type Encoder struct {
+	w   io.Writer
+	err error
+}
+
+// NewEncoder creates a new encoder that writes to w.
+func NewEncoder(w io.Writer) *Encoder {
+	return &Encoder{w: w}
+}
+
+// Encode writes TOML document of v to the underlying stream.
+func (enc *Encoder) Encode(v interface{}) error {
+	if enc.err != nil {
+		return enc.err
+	}
+
+	b, err := Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	_, enc.err = enc.w.Write(b)
+	return enc.err
 }

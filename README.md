@@ -1,4 +1,4 @@
-# TOML parser for Go
+# TOML parser and encoder for Go
 
 Compatible with [TOML][] version [v0.4.0](https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.4.0.md).
 
