@@ -244,7 +244,4 @@ Released under The MIT License (MIT). See [LICENSE](LICENSE) for the full licens
 ## Contribution
 Fire issue or pull request if you have any questions.
 
-## TODO
-- Encoder
-
 [TOML]: https://github.com/toml-lang/toml
