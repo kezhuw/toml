@@ -41,19 +41,37 @@ type EncodeStruct struct {
 	Strings []string
 	Table   EncodeTable
 	Tables  []*EncodeTable `toml:",omitempty"`
-	Inlines []EncodeTable
+	Inlines []EncodeTable  `toml:",inline"`
 }
 
 type encodeData struct {
-	in  interface{}
-	out interface{}
-	err error
+	in    interface{}
+	out   interface{}
+	err   error
+	print bool
 }
 
 var marshalTests = []encodeData{
 	{
 		in:  EncodeStruct{},
 		out: &EncodeStruct{},
+	},
+	{
+		in: EncodeStruct{
+			Strings: []string{"string a", "string b"},
+			Table: EncodeTable{
+				S: "string in table",
+			},
+			Inlines: []EncodeTable{
+				{S: "inline table 1"},
+				{S: "inline table 2"},
+			},
+			Tables: []*EncodeTable{
+				&EncodeTable{S: "pointer type table 1"},
+				&EncodeTable{S: "pointer type table 2"},
+			},
+		},
+		out: new(EncodeStruct),
 	},
 	{
 		in: EncodeStruct{
@@ -100,6 +118,10 @@ var marshalTests = []encodeData{
 func TestMarshal(t *testing.T) {
 	for i, test := range marshalTests {
 		b, err := toml.Marshal(test.in)
+
+		if test.print && err == nil {
+			t.Errorf("\n# %d: marshaled TOML document:\n%s# EOF\n", i, string(b))
+		}
 
 		if test.err != nil {
 			if !reflect.DeepEqual(test.err, err) {
