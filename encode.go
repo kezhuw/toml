@@ -695,8 +695,8 @@ func validMarshal(v interface{}) (reflect.Value, error) {
 
 // Marshal returns TOML encoding of v.
 //
-// Argument v must be of type struct/map or pointer to these types
-// and must not implement encoding.TextMarshaler.
+// Argument v must be of type struct/map or non-nil pointer or interface
+// to these types and must not implement encoding.TextMarshaler.
 //
 // Values implementing encoding.TextMarshaler are encoded as strings.
 //
