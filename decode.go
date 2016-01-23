@@ -167,6 +167,12 @@ func unmarshalString(s string, v reflect.Value, options tagOptions) {
 		if err != nil {
 			panic(err)
 		}
+		if v.Type().ConvertibleTo(datetimeType) {
+			t := v.Addr().Convert(reflect.PtrTo(datetimeType)).Interface().(*time.Time)
+			if t.IsZero() {
+				*t = time.Time{}
+			}
+		}
 		return
 	}
 	switch v.Kind() {
@@ -212,6 +218,9 @@ typeError:
 }
 
 func unmarshalDatetime(t time.Time, v reflect.Value) {
+	if t.IsZero() {
+		t = time.Time{}
+	}
 	if !reflect.TypeOf(t).ConvertibleTo(v.Type()) {
 		panic(&UnmarshalTypeError{"datetime " + t.Format(time.RFC3339Nano), v.Type()})
 	}
