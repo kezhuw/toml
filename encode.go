@@ -18,6 +18,7 @@ type encodeState struct {
 	bytes.Buffer
 }
 
+// InvalidMarshalError describes that invalid argument passed to Marshal.
 type InvalidMarshalError struct {
 	Type reflect.Type
 }
@@ -26,6 +27,7 @@ func (e *InvalidMarshalError) Error() string {
 	return "toml: Marshal(nil " + e.Type.String() + ")"
 }
 
+// InvalidUTF8Error describes that invalid UTF-8 encoded string encountered.
 type InvalidUTF8Error struct {
 	S string
 }
@@ -34,15 +36,18 @@ func (e *InvalidUTF8Error) Error() string {
 	return "toml: invalid UTF-8 in string: " + strconv.Quote(e.S)
 }
 
-type DuplicatedKeyError struct {
-	Path string
+// StructKeyError describes that multiple fields in struct has conflicted key.
+type StructKeyError struct {
 	Key  string
+	Type reflect.Type
 }
 
-func (e *DuplicatedKeyError) Error() string {
-	return "toml: key[" + normalizeKey(e.Key) + "] exists in table[" + e.Path + "]"
+func (e *StructKeyError) Error() string {
+	return "toml: Go type " + e.Type.String() + " has conflicted key: " + e.Key
 }
 
+// MarshalTypeError describes that a value of specified Go type cannot
+// be represent as desired TOML type.
 type MarshalTypeError struct {
 	Type reflect.Type
 	As   string
@@ -52,13 +57,16 @@ func (e *MarshalTypeError) Error() string {
 	return "toml: cannot marshal Go value of type " + e.Type.String() + " as toml " + e.As
 }
 
-type MarshalArrayError struct {
-	Expected string
-	Got      string
+// MarshalArrayTypeError describes that an unexpected type of array element
+// was encountered.
+type MarshalArrayTypeError struct {
+	Path   string
+	Expect string
+	Got    string
 }
 
-func (e *MarshalArrayError) Error() string {
-	return "toml: expect array of element type: " + e.Expected + ", got: " + e.Got
+func (e *MarshalArrayTypeError) Error() string {
+	return fmt.Sprintf("toml: array at %s expect element of type %s, got %s", e.Path, e.Expect, e.Got)
 }
 
 // MarshalNilValueError describes that a nil pointer or interface in array or slice.
@@ -97,6 +105,7 @@ type field struct {
 type table struct {
 	Inline bool
 	Path   string
+	Type   reflect.Type
 	sep    string
 	keys   map[string]struct{}
 	tables []field // table or array of tables
@@ -127,7 +136,7 @@ func (t *table) recordKey(key string) {
 		return
 	}
 	if _, ok := t.keys[key]; ok {
-		panic(&DuplicatedKeyError{Path: t.Path, Key: key})
+		panic(&StructKeyError{Key: key, Type: t.Type})
 	}
 	t.keys[key] = struct{}{}
 }
@@ -140,15 +149,6 @@ func (t *table) appendStructField(key string, value reflect.Value) {
 var (
 	datetimeType = reflect.TypeOf((*time.Time)(nil)).Elem()
 )
-
-type MarshalerError struct {
-	Type reflect.Type
-	Err  error
-}
-
-func (e *MarshalerError) Error() string {
-	return "TODO"
-}
 
 type stringValues []reflect.Value
 
@@ -422,12 +422,12 @@ func isEmptyValue(v reflect.Value) bool {
 	return false
 }
 
-func checkArrayElemType(elemType string) func(newElemType string) {
+func checkArrayElemType(path string, elemType string) func(newElemType string) {
 	return func(newType string) {
 		if elemType == "" {
 			elemType = newType
 		} else if elemType != newType {
-			panic(&MarshalArrayError{Expected: elemType, Got: newType})
+			panic(&MarshalArrayTypeError{Path: path, Expect: elemType, Got: newType})
 		}
 	}
 }
@@ -444,7 +444,7 @@ func (e *encodeState) marshalArrayValue(path string, v reflect.Value, options ta
 
 	sep := " "
 	e.WriteByte('[')
-	check := checkArrayElemType("")
+	check := checkArrayElemType(path, "")
 	for i, n := 0, v.Len(); i < n; i++ {
 		e.WriteString(sep)
 		ti, elem := indirectPtr(v.Index(i))
@@ -560,7 +560,7 @@ func (e *encodeState) marshalMapValue(path string, v reflect.Value, options tagO
 	}
 	e.WriteByte('{')
 	var keys stringValues = v.MapKeys()
-	t := &table{Inline: true, sep: " "}
+	t := &table{Inline: true, Type: v.Type(), sep: " "}
 	for _, k := range keys {
 		e.marshalTableField(t, k.String(), v.MapIndex(k), nil)
 	}
@@ -574,7 +574,7 @@ func (e *encodeState) marshalMapField(t *table, key string, v reflect.Value) {
 }
 
 func (e *encodeState) marshalStructValue(path string, v reflect.Value, options tagOptions) {
-	t := &table{Inline: true, Path: path, sep: " ", keys: make(map[string]struct{})}
+	t := &table{Inline: true, Path: path, Type: v.Type(), sep: " ", keys: make(map[string]struct{})}
 	e.WriteByte('{')
 	e.marshalStructTable(t, v)
 	e.WriteByte('}')
@@ -658,7 +658,7 @@ func (e *encodeState) marshalMap(path string, v reflect.Value) {
 	if v.Type().Key().Kind() != reflect.String {
 		panic(&MarshalTypeError{Type: v.Type(), As: "table key"})
 	}
-	t := &table{Path: path, sep: "\n"}
+	t := &table{Path: path, Type: v.Type(), sep: "\n"}
 	if path == "" {
 		t.sep = ""
 	}
@@ -670,7 +670,7 @@ func (e *encodeState) marshalMap(path string, v reflect.Value) {
 }
 
 func (e *encodeState) marshalStruct(path string, v reflect.Value) {
-	t := &table{Path: path, sep: "\n", keys: make(map[string]struct{})}
+	t := &table{Path: path, Type: v.Type(), sep: "\n", keys: make(map[string]struct{})}
 	if path == "" {
 		t.sep = ""
 	}
