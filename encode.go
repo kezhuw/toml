@@ -572,7 +572,9 @@ func (e *encodeState) marshalMapField(t *table, key string, v reflect.Value) {
 
 func (e *encodeState) marshalStructValue(path string, v reflect.Value, options tagOptions) {
 	t := &table{Inline: true, Path: path, sep: " ", keys: make(map[string]struct{})}
+	e.WriteByte('{')
 	e.marshalStructTable(t, v)
+	e.WriteByte('}')
 }
 
 func (e *encodeState) marshalStructField(t *table, key string, v reflect.Value) {
