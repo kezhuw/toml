@@ -340,7 +340,11 @@ func (e *encodeState) marshalUintValue(u uint64, options tagOptions) {
 }
 
 func (e *encodeState) marshalFloatValue(f float64, options tagOptions) {
-	e.marshalRawValue(strconv.FormatFloat(f, 'g', -1, 64), options)
+	s := strconv.FormatFloat(f, 'g', -1, 64)
+	if strings.IndexAny(s, ".e") == -1 {
+		s += ".0"
+	}
+	e.marshalRawValue(s, options)
 }
 
 func (e *encodeState) marshalBoolField(t *table, key string, b bool, options tagOptions) {
