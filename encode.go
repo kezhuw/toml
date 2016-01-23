@@ -395,6 +395,14 @@ func (e *encodeState) marshalTextField(t *table, key string, ti encoding.TextMar
 	e.marshalTextValue(ti, options)
 }
 
+func isNilValue(v reflect.Value) bool {
+	switch v.Type().Kind() {
+	case reflect.Ptr, reflect.Interface, reflect.Map, reflect.Slice:
+		return v.IsNil()
+	}
+	return false
+}
+
 func isEmptyValue(v reflect.Value) bool {
 	switch v.Type().Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
@@ -509,7 +517,7 @@ func (e *encodeState) marshalTableField(t *table, key string, v reflect.Value, o
 		return
 	}
 
-	if options.Has("omitempty") && isEmptyValue(v) {
+	if isNilValue(v) || (options.Has("omitempty") && isEmptyValue(v)) {
 		return
 	}
 
@@ -538,8 +546,6 @@ func (e *encodeState) marshalTableField(t *table, key string, v reflect.Value, o
 		} else {
 			t.appendStructField(key, v)
 		}
-	case reflect.Ptr, reflect.Interface:
-		// nil pointer/interface are ignored.
 	default:
 		panic(&MarshalTypeError{Type: v.Type(), As: "value"})
 	}
@@ -687,8 +693,9 @@ func validMarshal(v interface{}) (reflect.Value, error) {
 //
 // Values implementing encoding.TextMarshaler are encoded as strings.
 //
-// Fields with nil pointer/interface value in struct or map are ignored.
-// Error is raised when nil pointer/interface is encountered in array or
+// Fields with nil value in struct or map are ignored. Nil maps or
+// slices in array are encoded as empty tables or arrays in TOML. Error
+// is raised when nil pointer or interface is encountered in array or
 // slice.
 //
 // Slice of byte is encoded as base64-encoded string.

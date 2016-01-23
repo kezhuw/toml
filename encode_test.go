@@ -22,6 +22,10 @@ type EncodeEmbed struct {
 	EncodeIgnore `toml:"-"`
 }
 
+type EncodeTable struct {
+	S string `toml:"s"`
+}
+
 type EncodeStruct struct {
 	Int        int
 	Uint       uint `toml:"unsigned,string"`
@@ -34,6 +38,10 @@ type EncodeStruct struct {
 	Ignored    string `toml:"-"`
 	unexported string
 	*EncodeEmbed
+	Strings []string
+	Table   EncodeTable
+	Tables  []*EncodeTable `toml:",omitempty"`
+	Inlines []EncodeTable
 }
 
 type encodeData struct {
@@ -43,6 +51,10 @@ type encodeData struct {
 }
 
 var marshalTests = []encodeData{
+	{
+		in:  EncodeStruct{},
+		out: &EncodeStruct{},
+	},
 	{
 		in: EncodeStruct{
 			Int:        -3242,
@@ -109,7 +121,7 @@ func TestMarshal(t *testing.T) {
 
 		got := reflect.ValueOf(test.out).Elem().Interface()
 		if !reflect.DeepEqual(test.in, got) {
-			t.Errorf("#%d: got %+v\n, want %+v\n,\ntext:\n%s", i, got, test.in, string(b))
+			t.Errorf("#%d:\ngot  %+v,\nwant %+v\n,\ntext:\n%s", i, got, test.in, string(b))
 			continue
 		}
 	}
