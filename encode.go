@@ -61,13 +61,14 @@ func (e *MarshalArrayError) Error() string {
 	return "toml: expect array of element type: " + e.Expected + ", got: " + e.Got
 }
 
-type MarshalValueError struct {
-	Value string
-	Type  reflect.Type
+// MarshalNilValueError describes that a nil pointer or interface in array or slice.
+type MarshalNilValueError struct {
+	Type reflect.Type
+	As   string
 }
 
-func (e *MarshalValueError) Error() string {
-	return "toml: cannot marshal `" + e.Value + "` of Go type " + e.Type.String()
+func (e *MarshalNilValueError) Error() string {
+	return "toml: cannot marshal nil value of Go type " + e.Type.String() + " as toml " + e.As
 }
 
 func indirectPtr(v reflect.Value) (encoding.TextMarshaler, reflect.Value) {
@@ -482,6 +483,8 @@ func (e *encodeState) marshalArrayValue(path string, v reflect.Value, options ta
 		case reflect.Struct:
 			check("table")
 			e.marshalStructValue(combineIndexPath(path, i), elem, options)
+		case reflect.Ptr, reflect.Interface:
+			panic(&MarshalNilValueError{Type: elem.Type(), As: "array element"})
 		default:
 			panic(&MarshalTypeError{Type: elem.Type(), As: "array element"})
 		}
@@ -639,6 +642,8 @@ func (e *encodeState) marshalTables(sup *table, tables []field) {
 					e.marshalMap(path, elem)
 				case reflect.Struct:
 					e.marshalStruct(path, elem)
+				case reflect.Ptr, reflect.Interface:
+					panic(&MarshalNilValueError{Type: elem.Type(), As: "array element"})
 				default:
 					panic(&MarshalTypeError{Type: elem.Type(), As: "table"})
 				}
