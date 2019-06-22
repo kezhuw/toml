@@ -60,9 +60,6 @@ func indirectType(t reflect.Type) reflect.Type {
 }
 
 func indirectValue(v reflect.Value) (encoding.TextUnmarshaler, reflect.Value) {
-	if v.Kind() != reflect.Ptr && v.CanAddr() {
-		v = v.Addr()
-	}
 	var u encoding.TextUnmarshaler
 	for {
 		if v.Kind() == reflect.Interface && !v.IsNil() {
@@ -161,6 +158,9 @@ overflowError:
 }
 
 func unmarshalString(s string, v reflect.Value, options tagOptions) {
+	if v.Kind() != reflect.Ptr && v.CanAddr() {
+		v = v.Addr()
+	}
 	u, v := indirectValue(v)
 	if u != nil {
 		err := u.UnmarshalText([]byte(s))
